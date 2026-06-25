@@ -1,0 +1,52 @@
+{
+  "name": "bundeswahlapp-desktop",
+  "version": "1.0.0",
+  "description": "Optimierte Bundeswahlapp",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "obfuscate": "node obfuscate.js",
+    "dist": "npm run obfuscate && electron-builder"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "electron": "^40.4.1",
+    "electron-builder": "^24.13.3",
+    "fs-extra": "^11.3.3",
+    "javascript-obfuscator": "^5.3.0"
+  },
+  "build": {
+    "appId": "com.bundeswahlapp.desktop",
+    "productName": "Bundeswahlapp",
+    "directories": {
+      "output": "dist_installer",
+      "buildResources": "build"
+    },
+    "files": [
+      "dist-obfuscated/**/*",
+      "package.json",
+      "!node_modules/javascript-obfuscator",
+      "!src/**/*",
+      "!obfuscate.js"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "compression": "maximum"
+    },
+    "asar": true,
+    "nsis": {
+      "oneClick": true,
+      "deleteAppDataOnUninstall": true
+    }
+  }
+}
