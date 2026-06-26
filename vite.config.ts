@@ -1,3 +1,8 @@
+/// <reference types="vite/client" />
+
+// Provide a lightweight ambient declaration when Vite types are not installed
+declare module 'vite';
+
 import { defineConfig } from 'vite';
 import path from 'path';
 

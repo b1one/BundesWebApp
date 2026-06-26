@@ -5,6 +5,9 @@
   "main": "main.js",
   "scripts": {
     "start": "electron .",
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
     "obfuscate": "node obfuscate.js",
     "dist": "npm run obfuscate && electron-builder"
   },
