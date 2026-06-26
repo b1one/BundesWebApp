@@ -17,12 +17,8 @@ export interface SignicatSession {
 export class EIDService {
     private static instance: EIDService;
     
-    // API Configuration
-    private readonly API_BASE_URL = 'https://api.signicat.com/eid-hub/v1';
-    // In a production app, these MUST be stored in a secure backend.
-    // For the sandbox prototype, we use environment-style placeholders.
-    private readonly CLIENT_ID = 'BUNDESWAHLAPP_SANDBOX_ID'; 
-    private readonly CLIENT_SECRET = 'BUNDESWAHLAPP_SANDBOX_SECRET';
+    // Change: Now calling our own serverless proxy
+    private readonly API_PROXY_URL = '/api/eid';
 
     private constructor() {}
 
@@ -34,16 +30,13 @@ export class EIDService {
     }
 
     private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-        const url = `${this.API_BASE_URL}${endpoint}`;
-        
-        // Signicat requires Basic Auth or Bearer Token
-        const authHeader = 'Basic ' + btoa(`${this.CLIENT_ID}:${this.CLIENT_SECRET}`);
+        // Construct URL to call the Vercel function
+        const url = `${this.API_PROXY_URL}${endpoint}`;
         
         const response = await fetch(url, {
             ...options,
             headers: {
                 ...options.headers,
-                'Authorization': authHeader,
                 'Content-Type': 'application/json',
                 'Accept': 'application/json'
             }
@@ -51,7 +44,7 @@ export class EIDService {
 
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
-            throw new Error(errorData.message || `API Error: ${response.status}`);
+            throw new Error(errorData.error || `Proxy Error: ${response.status}`);
         }
 
         return response.json();
@@ -61,14 +54,13 @@ export class EIDService {
      * Creates an authentication session for the German Personalausweis.
      */
     public async createSession(): Promise<SignicatSession> {
-        console.log('[EIDService] Creating Signicat session for German eID...');
+        console.log('[EIDService] Creating Signicat session via proxy...');
         
         return this.request<SignicatSession>('/sessions', {
             method: 'POST',
             body: JSON.stringify({
-                idp: 'DE_EID', // German Personalausweis IDP
-                callbackUrl: 'https://bundeswahlapp.de/callback',
-                // Additional required fields for Signicat eID Hub go here
+                idp: 'DE_EID',
+                callbackUrl: 'https://bundeswahlapp.vercel.app/callback',
             })
         });
     }
@@ -77,7 +69,7 @@ export class EIDService {
      * Polls the status of the authentication session.
      */
     public async getSessionStatus(sessionId: string): Promise<SignicatSession> {
-        console.log(`[EIDService] Checking status for session ${sessionId}...`);
+        console.log(`[EIDService] Checking status via proxy for session ${sessionId}...`);
         return this.request<SignicatSession>(`/sessions/${sessionId}`);
     }
 
@@ -85,7 +77,7 @@ export class EIDService {
      * Cancels an ongoing authentication session.
      */
     public async cancelSession(sessionId: string): Promise<{ success: boolean }> {
-        console.log(`[EIDService] Canceling session ${sessionId}...`);
+        console.log(`[EIDService] Canceling session via proxy ${sessionId}...`);
         return this.request<{ success: boolean }>(`/sessions/${sessionId}`, {
             method: 'DELETE'
         });
@@ -95,7 +87,7 @@ export class EIDService {
      * signs a payload using the authenticated eID session.
      */
     public async signPayload(payload: any, sessionId: string): Promise<string> {
-        console.log('[EIDService] Requesting cryptographic signature from Signicat...');
+        console.log('[EIDService] Requesting signature via proxy...');
         const response = await this.request<{ signature: string }>('/sign', {
             method: 'POST',
             body: JSON.stringify({
