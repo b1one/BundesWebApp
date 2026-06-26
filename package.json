@@ -16,10 +16,18 @@
   "license": "ISC",
   "type": "commonjs",
   "devDependencies": {
+    "@types/electron": "^1.4.38",
+    "@types/node": "^26.0.1",
     "electron": "^40.4.1",
     "electron-builder": "^24.13.3",
+    "eslint": "^10.5.0",
     "fs-extra": "^11.3.3",
-    "javascript-obfuscator": "^5.3.0"
+    "javascript-obfuscator": "^5.3.0",
+    "prettier": "^3.8.4",
+    "ts-node": "^10.9.2",
+    "typescript": "^6.0.3",
+    "vite": "^8.1.0",
+    "vitest": "^4.1.9"
   },
   "build": {
     "appId": "com.bundeswahlapp.desktop",
