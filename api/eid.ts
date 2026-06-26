@@ -6,7 +6,7 @@ const CLIENT_SECRET = process.env.SIGNICAT_CLIENT_SECRET || 'ExpzpJ5Vvhj60Cmx47C
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Handle CORS preflight
-    if (req.method === 'GET') {
+    if (req.method === 'OPTIONS') {
         return res.status(200).setHeader('Access-Control-Allow-Origin', '*').setHeader('Access-Control-Allow-Methods', 'GET,POST,DELETE,OPTIONS').setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization').send();
     }
 
