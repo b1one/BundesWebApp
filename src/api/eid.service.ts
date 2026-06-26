@@ -7,9 +7,22 @@ export interface EIDAuthResponse {
     error?: string;
 }
 
+export interface SignicatSession {
+    id: string;
+    status: 'CREATED' | 'PENDING' | 'COMPLETED' | 'EXPIRED' | 'CANCELED';
+    url?: string;
+    user?: User;
+}
+
 export class EIDService {
     private static instance: EIDService;
-    private readonly API_ENDPOINT = 'https://eid.scrive.com/api/v1'; // Example Scrive endpoint
+    
+    // API Configuration
+    private readonly API_BASE_URL = 'https://api.signicat.com/eid-hub/v1';
+    // In a production app, these MUST be stored in a secure backend.
+    // For the sandbox prototype, we use environment-style placeholders.
+    private readonly CLIENT_ID = 'BUNDESWAHLAPP_SANDBOX_ID'; 
+    private readonly CLIENT_SECRET = 'BUNDESWAHLAPP_SANDBOX_SECRET';
 
     private constructor() {}
 
@@ -20,62 +33,77 @@ export class EIDService {
         return EIDService.instance;
     }
 
-    /**
-     * Initiates the eID authentication flow.
-     * In a real scenario, this would trigger the AusweisApp via a deep link or QR code.
-     */
-    public async initiateAuthentication(): Promise<{ sessionUrl: string; sessionId: string }> {
-        console.log('[EIDService] Initiating authentication request...');
+    private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+        const url = `${this.API_BASE_URL}${endpoint}`;
         
-        // Simulating API call to start eID session
-        return new Promise((resolve) => {
-            setTimeout(() => {
-                resolve({
-                    sessionId: `sess_${Math.random().toString(36).substr(2, 9)}`,
-                    sessionUrl: `https://ausweisapp.bund.de/auth?session=mock_session`
-                });
-            }, 800);
+        // Signicat requires Basic Auth or Bearer Token
+        const authHeader = 'Basic ' + btoa(`${this.CLIENT_ID}:${this.CLIENT_SECRET}`);
+        
+        const response = await fetch(url, {
+            ...options,
+            headers: {
+                ...options.headers,
+                'Authorization': authHeader,
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || `API Error: ${response.status}`);
+        }
+
+        return response.json();
+    }
+
+    /**
+     * Creates an authentication session for the German Personalausweis.
+     */
+    public async createSession(): Promise<SignicatSession> {
+        console.log('[EIDService] Creating Signicat session for German eID...');
+        
+        return this.request<SignicatSession>('/sessions', {
+            method: 'POST',
+            body: JSON.stringify({
+                idp: 'DE_EID', // German Personalausweis IDP
+                callbackUrl: 'https://bundeswahlapp.de/callback',
+                // Additional required fields for Signicat eID Hub go here
+            })
         });
     }
 
     /**
-     * Verifies the identity token received from the eID provider.
+     * Polls the status of the authentication session.
      */
-    public async verifyToken(token: string): Promise<EIDAuthResponse> {
-        console.log(`[EIDService] Verifying token: ${token}`);
-        
-        try {
-            // In reality, this would be a secure server-to-server call
-            const response = await fetch(`${this.API_ENDPOINT}/verify`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ token })
-            });
-
-            if (!response.ok) throw new Error('Verification failed');
-            
-            const data = await response.json();
-            return {
-                success: true,
-                token: data.token,
-                user: data.user
-            };
-        } catch (error) {
-            // Fallback for demonstration purposes when API is not live
-            console.warn('[EIDService] API not reachable, using mock verification');
-            return {
-                success: true,
-                user: { name: 'Max Mustermann', id: 'L029384', verified: true }
-            };
-        }
+    public async getSessionStatus(sessionId: string): Promise<SignicatSession> {
+        console.log(`[EIDService] Checking status for session ${sessionId}...`);
+        return this.request<SignicatSession>(`/sessions/${sessionId}`);
     }
 
     /**
-     * signs a payload (e.g. a vote) using the eID secure element.
+     * Cancels an ongoing authentication session.
      */
-    public async signPayload(payload: any): Promise<string> {
-        console.log('[EIDService] Signing payload with secure eID element...');
-        return `sig_${Math.random().toString(36).substr(2, 15)}`;
+    public async cancelSession(sessionId: string): Promise<{ success: boolean }> {
+        console.log(`[EIDService] Canceling session ${sessionId}...`);
+        return this.request<{ success: boolean }>(`/sessions/${sessionId}`, {
+            method: 'DELETE'
+        });
+    }
+
+    /**
+     * signs a payload using the authenticated eID session.
+     */
+    public async signPayload(payload: any, sessionId: string): Promise<string> {
+        console.log('[EIDService] Requesting cryptographic signature from Signicat...');
+        const response = await this.request<{ signature: string }>('/sign', {
+            method: 'POST',
+            body: JSON.stringify({
+                sessionId,
+                payload
+            })
+        });
+        return response.signature;
     }
 }
 

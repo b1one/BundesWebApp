@@ -36,7 +36,7 @@ export const Components = {
         el.className = "absolute inset-0 bg-slate-900 z-50 flex flex-col items-center justify-center text-white p-6 fade-in";
         el.innerHTML = `
             <div class="absolute top-0 left-0 w-full p-4 flex justify-between items-center opacity-50">
-                <span class="text-xs font-mono">PersoSim Simulator Interface</span>
+                <span class="text-xs font-mono">Signicat eID Hub Interface</span>
                 <i class="ph-fill ph-wifi-high"></i>
             </div>
             <div class="relative flex items-center justify-center mb-10">
@@ -45,13 +45,13 @@ export const Components = {
                 <div class="nfc-ripple"></div>
                 <i class="ph-duotone ph-identification-card text-8xl relative z-10 text-blue-400"></i>
             </div>
-            <h2 class="text-2xl font-bold mb-2 text-center">Ausweis bereit</h2>
+            <h2 class="text-2xl font-bold mb-2 text-center">AusweisApp gestartet</h2>
             <p class="text-slate-300 text-center mb-8 max-w-xs">
-                Halten Sie Ihren Personalausweis an die Rückseite Ihres Gerätes, um die eID-Funktion zu nutzen.
+                Bitte öffnen Sie die AusweisApp auf Ihrem Smartphone und bestätigen Sie die Identifizierung.
             </p>
             <div class="bg-slate-800 rounded-lg p-4 w-full max-w-xs border border-slate-700 flex items-center gap-3">
                 <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                <span class="text-sm text-slate-300 font-mono">Scanner aktiv...</span>
+                <span class="text-sm text-slate-300 font-mono">Warte auf Bestätigung...</span>
             </div>
             <button id="cancel-nfc" class="mt-12 text-slate-400 hover:text-white text-sm font-medium py-2 px-6 border border-slate-600 rounded-full">
                 Abbrechen

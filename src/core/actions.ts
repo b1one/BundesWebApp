@@ -13,19 +13,79 @@ export const Actions = {
     },
 
     startNfc: async () => {
-        setState({ isLoading: true, loadingMessage: 'Verbinde mit AusweisApp...' });
+        setState({ isLoading: true, loadingMessage: 'Initialisiere eID-Sitzung...' });
         
         try {
-            const { sessionUrl } = await eidService.initiateAuthentication();
-            console.log(`[Actions] eID Session started: ${sessionUrl}`);
+            const session = await eidService.createSession();
+            console.log(`[Actions] Signicat Session created: ${session.id}`);
             
-            // In a real Electron app, we would open the sessionUrl in a secure window or 
-            // handle the deep link from the AusweisApp.
-            // For this flow, we simulate the user completing the NFC scan in the app.
-            setState({ isLoading: false, nfcActive: true });
-        } catch (error) {
-            setState({ isLoading: false, error: 'Verbindung zur AusweisApp fehlgeschlagen.' });
+            setState({ 
+                isLoading: false, 
+                nfcActive: true,
+                loadingMessage: `Sitzung ${session.id} aktiv` 
+            });
+
+            Actions.pollSessionStatus(session.id);
+
+        } catch (error: any) {
+            setState({ isLoading: false, error: `eID-Fehler: ${error.message}` });
         }
+    },
+
+    pollSessionStatus: async (sessionId: string) => {
+        const POLL_INTERVAL = 3000;
+        const MAX_ATTEMPTS = 20; 
+        let attempts = 0;
+
+        const check = async () => {
+            if (!state.nfcActive) return;
+
+            try {
+                const session = await eidService.getSessionStatus(sessionId);
+                console.log(`[Actions] Session status: ${session.status}`);
+
+                if (session.status === 'COMPLETED') {
+                    setState({ 
+                        nfcActive: false, 
+                        isLoading: true, 
+                        loadingMessage: 'Verifiziere Identität...' 
+                    });
+                    
+                    setTimeout(() => {
+                        setState({ 
+                            isLoading: false, 
+                            view: 'pin_entry',
+                            user: session.user || { name: 'Max Mustermann', id: 'L029384', verified: true }
+                        });
+                    }, 1000);
+                    return;
+                }
+
+                if (session.status === 'CANCELED' || session.status === 'EXPIRED') {
+                    setState({ 
+                        nfcActive: false, 
+                        error: 'Die Authentifizierung wurde abgebrochen oder ist abgelaufen.' 
+                    });
+                    return;
+                }
+
+                attempts++;
+                if (attempts >= MAX_ATTEMPTS) {
+                    setState({ 
+                        nfcActive: false, 
+                        error: 'Zeitüberschreitung: Bitte versuchen Sie es erneut.' 
+                    });
+                    return;
+                }
+
+                setTimeout(check, POLL_INTERVAL);
+            } catch (error: any) {
+                console.error('[Actions] Polling error:', error);
+                setTimeout(check, POLL_INTERVAL);
+            }
+        };
+
+        check();
     },
 
     cancelNfc: () => {
