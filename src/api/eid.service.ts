@@ -60,7 +60,7 @@ export class EIDService {
             method: 'POST',
             body: JSON.stringify({
                 idp: 'DE_EID',
-                callbackUrl: 'https://bundeswahlapp.vercel.app/callback',
+                callbackUrl: 'https://bundeswahlapp.sandbox.signicat.com/broker/sp/simulator/login-response',
             })
         });
     }
